@@ -1,0 +1,11 @@
+[package]
+name = "dr-extract"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+thiserror = "1.0"
+anyhow = "1.0"
+byteorder = "1.4"
+tuple-transpose = "0.1"
+image = "0.23"

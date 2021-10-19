@@ -1,0 +1,6 @@
+data.win
+
+Cargo.lock
+/target
+/.vscode
+/extract
