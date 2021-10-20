@@ -1,4 +1,6 @@
-# dr-extract
+<h1>dr-extract<br>
+    <a href="https://github.com/PieKing1215/dr-extract-rs/actions/workflows/rust_build_test.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/PieKing1215/dr-extract-rs/Rust%20Build+Test"></a>
+</h1>
 
 A WIP Rust library for parsing and extracting assets from [DELTARUNE](https://deltarune.com)'s data.win.
 
