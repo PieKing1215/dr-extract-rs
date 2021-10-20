@@ -65,7 +65,7 @@ println!("{}", data.sond.as_ref().unwrap().sounds[0].name);
 data.load_spritesheets().unwrap();
 
 // now you can do this:
-if let dr_extract::PNGState::Loaded { texture } = &data.txtr.as_ref().unwrap().spritesheets[0].png {
+if let dr_extract::chunk::PNGState::Loaded { texture } = &data.txtr.as_ref().unwrap().spritesheets[0].png {
     // do whatever with the texture
     // ('texture' here is &image::DynamicImage)
 }
@@ -77,7 +77,7 @@ if let dr_extract::PNGState::Loaded { texture } = &data.txtr.as_ref().unwrap().s
 data.load_sprites().unwrap();
 
 // now you can do this:
-if let dr_extract::SpriteState::Loaded { textures } = &data.sprt.as_ref().unwrap().sprites[0].textures {
+if let dr_extract::chunk::SpriteState::Loaded { textures } = &data.sprt.as_ref().unwrap().sprites[0].textures {
     // do whatever with the textures
     // ('textures' here is &Vec<image::DynamicImage> since it can be animated)
 }
