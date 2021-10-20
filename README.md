@@ -4,6 +4,8 @@
 
 A WIP Rust library for parsing and extracting assets from [DELTARUNE](https://deltarune.com)'s data.win.
 
+This is not just a dumping tool, everything is loaded into memory and can be accessed directly from your Rust code.
+
 You must provide your own data.win file. I will not host it myself, nor will I host any extracted assets here.
 
 It might work for other GameMaker games, but I have not tested any.
@@ -42,7 +44,7 @@ Not supported right now:
 The script [examples/dump.rs](examples/dump.rs) is a simple example binary that uses the library to dump assets from a provided data.win.<br>
 To run it, do `cargo run --release --example dump` and it will dump from `./data.win` into `./extract/`.
 
-While this is neat and all, this is a LIBRARY, not just a tool for dumping to files. Everything is loaded into memory and can be accessed directly from your Rust code.
+While this is neat and all, this is a *library*, not just a tool for dumping to files.
 
 I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image data) for individual chunks that have assets (currently TXTR, SPRT; eventually SOND + more?)
 
