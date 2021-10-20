@@ -9,7 +9,6 @@ use chunk::{Gen8, Optn, PNGState, Sond, SpriteState, Sprt, TextureEntry, Tpag, T
 
 use std::{convert::TryInto, fs, io::{Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
-use thiserror::Error;
 
 use crate::chunk::Chunk;
 
