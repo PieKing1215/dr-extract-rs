@@ -14,7 +14,6 @@ use crate::chunk::Chunk;
 
 pub mod chunk;
 
-#[allow(clippy::too_many_lines)]
 pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error> {
     let p = path.as_ref();
 
