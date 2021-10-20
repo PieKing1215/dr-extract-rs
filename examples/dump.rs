@@ -1,7 +1,7 @@
 //! Example program that extracts assets from a data.win file in the working directory.
 //! The extracted assets are placed in ./extract/
 
-use std::fs;
+use std::{fs, time::Instant};
 
 extern crate dr_extract;
 
@@ -28,7 +28,9 @@ fn main() {
     data.parse_txtr().expect("parse_txtr failed");
 
     println!("Loading spritesheets...");
+    let start = Instant::now();
     data.load_spritesheets().expect("Loading spritesheets failed");
+    println!("Took {} ms", Instant::now().saturating_duration_since(start).as_millis());
 
     println!("Dumping spritesheets...");
     fs::create_dir_all("extract/spritesheet/").unwrap();
@@ -51,23 +53,26 @@ fn main() {
     data.parse_sprt().expect("parse_sprt failed");
 
     println!("Loading sprites...");
+    let start = Instant::now();
     data.load_sprites().expect("Loading sprites failed");
+    // data.load_sprite("spr_kris_fall_smear").expect("Loading sprite failed");
+    println!("Took {} ms", Instant::now().saturating_duration_since(start).as_millis());
 
     println!("Dumping sprites...");
     fs::create_dir_all("extract/sprite/").unwrap();
     if let Some(sprt) = &data.sprt {
-        for spr in &sprt.sprites {
+        for (name, spr) in &sprt.sprites {
             match &spr.textures {
                 dr_extract::chunk::SpriteState::Loaded { textures } => {
-                    // println!("{}: {:?}", spr.name, textures.len());
-    
-                    for (i, tex) in textures.iter().enumerate() {
-                        tex.save(format!("extract/sprite/{}_{}.png", spr.name, i)).unwrap();
+                    if textures.len() == 1 {
+                        textures[0].save(format!("extract/sprite/{}.png", name)).unwrap();
+                    }else{
+                        for (i, tex) in textures.iter().enumerate() {
+                            tex.save(format!("extract/sprite/{}_{}.png", name, i)).unwrap();
+                        }
                     }
                 }
-                dr_extract::chunk::SpriteState::Unloaded { .. } => {
-                    println!("Sprite {} not loaded.", spr.name);
-                },
+                dr_extract::chunk::SpriteState::Unloaded { .. } => {},
             }
         }
     }

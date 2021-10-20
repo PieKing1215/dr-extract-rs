@@ -5,7 +5,7 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_errors_doc)]
 
-use chunk::{Gen8, Optn, PNGState, Sond, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
+use chunk::{Gen8, Optn, PNGState, Sond, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
 
 use std::{collections::HashMap, convert::TryInto, fs, io::{Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -21,7 +21,8 @@ pub fn prepare_file<P: AsRef<Path>>(path: P) -> Result<DataWinReady, anyhow::Err
 pub fn prepare_bytes(bytes: Vec<u8>) -> Result<DataWinReady, anyhow::Error> {
     let n_bytes = bytes.len();
 
-    println!("Given {} bytes...", n_bytes);
+    // TODO: log::info!
+    // println!("Given {} bytes...", n_bytes);
 
     let buf = Cursor::new(bytes);
 
@@ -51,7 +52,8 @@ impl DataWinReady {
                 self.buf.read_exact(&mut chunk_name_buf)?;
                 let chunk_len = self.buf.read_i32::<LittleEndian>()?;
     
-                println!("chunk {}, len: {}", String::from_utf8_lossy(&chunk_name_buf), chunk_len);
+                // TODO: log::debug!
+                // println!("chunk {}, len: {}", String::from_utf8_lossy(&chunk_name_buf), chunk_len);
 
                 let this_chunk_pos = self.buf.position();
 
@@ -163,6 +165,86 @@ impl DataWin {
         Ok(())
     }
 
+    fn load_sprite_raw(txtr: &mut Txtr, buf: &mut Cursor<Vec<u8>>, spr: &mut SpriteEntry, name: &str) -> anyhow::Result<()> {
+        if let SpriteState::Unloaded { texture_count: _, texture_addresses } = &spr.textures {
+
+            let mut textures = Vec::new();
+
+            for addr in texture_addresses {
+                buf.set_position(*addr as u64);
+
+                if *addr == 0 {
+                    // TODO: log::debug!
+                    // println!("sprite {} has a texture_addr == 0", name);
+                }else{
+                    let x = buf.read_u16::<LittleEndian>()?;
+                    let y = buf.read_u16::<LittleEndian>()?;
+                    let width = buf.read_u16::<LittleEndian>()?;
+                    let height = buf.read_u16::<LittleEndian>()?;
+                    let render_x = buf.read_u16::<LittleEndian>()?;
+                    let render_y = buf.read_u16::<LittleEndian>()?;
+                    let bouding_x = buf.read_u16::<LittleEndian>()?;
+                    let bouding_y = buf.read_u16::<LittleEndian>()?;
+                    let bouding_width = buf.read_u16::<LittleEndian>()?;
+                    let bouding_height = buf.read_u16::<LittleEndian>()?;
+                    let spritesheet_id = buf.read_u16::<LittleEndian>()?;
+
+                    let tex = TextureEntry {
+                        x,
+                        y,
+                        width,
+                        height,
+                        render_x,
+                        render_y,
+                        bouding_x,
+                        bouding_y,
+                        bouding_width,
+                        bouding_height,
+                        spritesheet_id,
+                    };
+
+                    // self.txtr.unwrap() is safe because of the check at the start of the fn
+                    let sheet = &mut txtr.spritesheets[tex.spritesheet_id as usize];
+                    let texture = match &mut sheet.png {
+                        PNGState::Loaded { texture } => {
+                            Ok(texture.crop(u32::from(tex.x), u32::from(tex.y), u32::from(tex.width), u32::from(tex.height)))
+                        }
+                        PNGState::Unloaded{ .. } => Err(anyhow::anyhow!("Spritesheet not loaded!")),
+                    }?;
+
+                    textures.push(texture);
+                }
+            }
+
+            // assert_eq!(textures.len(), texture_addresses.len()); // not true if addr == 0
+
+            spr.textures = SpriteState::Loaded {
+                textures
+            };
+        }
+
+        Ok(())
+    }
+
+    pub fn load_sprite<S: Into<String>>(&mut self, name: S) -> anyhow::Result<()> {
+        if let Some(sprt) = &mut self.sprt {
+            // we don't actually use the values already stored in TPAG since the sprite only knows the address, not the index...
+            //   not really sure if it would be worth adding a hashmap or something to save the TPAG entries' addresses so we can look them up here?
+            if let Some(txtr) = &mut self.txtr {
+                let name = &name.into();
+                if let Some(spr) = sprt.sprites.get_mut(name) {
+                    DataWin::load_sprite_raw(txtr, &mut self.buf, spr, name)?;
+                }
+            } else {
+                return Err(anyhow::anyhow!("TXTR chunk must be parsed before calling load_sprites!"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("SPRT chunk must be parsed before calling load_sprites!"));
+        }
+
+        Ok(())
+    }
+
     pub fn load_sprites(&mut self) -> anyhow::Result<()> {
 
         if let Some(sprt) = &mut self.sprt {
@@ -171,63 +253,8 @@ impl DataWin {
 
             // if let Some(tpag) = &mut self.tpag {
                 if let Some(txtr) = &mut self.txtr {
-                    for spr in &mut sprt.sprites {
-                        if let SpriteState::Unloaded { texture_count: _, texture_addresses } = &spr.textures {
-
-                            let mut textures = Vec::new();
-
-                            for addr in texture_addresses {
-                                self.buf.set_position(*addr as u64);
-
-                                if *addr == 0 {
-                                    println!("sprite {} has a texture_addr == 0", spr.name);
-                                }else{
-                                    let x = self.buf.read_u16::<LittleEndian>()?;
-                                    let y = self.buf.read_u16::<LittleEndian>()?;
-                                    let width = self.buf.read_u16::<LittleEndian>()?;
-                                    let height = self.buf.read_u16::<LittleEndian>()?;
-                                    let render_x = self.buf.read_u16::<LittleEndian>()?;
-                                    let render_y = self.buf.read_u16::<LittleEndian>()?;
-                                    let bouding_x = self.buf.read_u16::<LittleEndian>()?;
-                                    let bouding_y = self.buf.read_u16::<LittleEndian>()?;
-                                    let bouding_width = self.buf.read_u16::<LittleEndian>()?;
-                                    let bouding_height = self.buf.read_u16::<LittleEndian>()?;
-                                    let spritesheet_id = self.buf.read_u16::<LittleEndian>()?;
-
-                                    let tex = TextureEntry {
-                                        x,
-                                        y,
-                                        width,
-                                        height,
-                                        render_x,
-                                        render_y,
-                                        bouding_x,
-                                        bouding_y,
-                                        bouding_width,
-                                        bouding_height,
-                                        spritesheet_id,
-                                    };
-
-                                    // println!("addr = {}, spritesheet_id = {}", addr, spritesheet_id);
-
-                                    let sheet = &mut txtr.spritesheets[tex.spritesheet_id as usize];
-                                    let texture = match &mut sheet.png {
-                                        PNGState::Loaded { texture } => {
-                                            Ok(texture.crop(u32::from(tex.x), u32::from(tex.y), u32::from(tex.width), u32::from(tex.height)))
-                                        }
-                                        PNGState::Unloaded{ .. } => Err(anyhow::anyhow!("Spritesheet not loaded!")),
-                                    }?;
-
-                                    textures.push(texture);
-                                }
-                            }
-
-                            // assert_eq!(textures.len(), texture_addresses.len());
-
-                            spr.textures = SpriteState::Loaded {
-                                textures
-                            };
-                        }
+                    for (name, spr) in &mut sprt.sprites {
+                        DataWin::load_sprite_raw(txtr, &mut self.buf, spr, name)?;
                     }
                 } else {
                     return Err(anyhow::anyhow!("TXTR chunk must be parsed before calling load_sprites!"));

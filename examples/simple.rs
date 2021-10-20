@@ -42,18 +42,20 @@ fn main() {
     println!("# of sprites = {}", data.sprt.as_ref().unwrap().sprites.len());
 
     // prints unloaded
-    match data.sprt.as_ref().unwrap().sprites[0].textures {
+    match data.sprt.as_ref().unwrap().sprites.values().next().unwrap().textures {
         SpriteState::Loaded{..} => println!("sprite #0 image data is loaded"),
         SpriteState::Unloaded{..} => println!("sprite #0 image data is unloaded"),
     }
 
-    // load sprite image data
+    // load image data for all sprites
+    // alternatively, you could use data.load_sprite(String) to load individual sprites
     // requires the SPRT chunk to have been parsed already (parse_sprt)
     // requires load_spritesheets to have been called already
     data.load_sprites().unwrap();
     
+    
     // now prints loaded
-    match data.sprt.as_ref().unwrap().sprites[0].textures {
+    match data.sprt.as_ref().unwrap().sprites.values().next().unwrap().textures {
         SpriteState::Loaded{..} => println!("sprite #0 image data is loaded"),
         SpriteState::Unloaded{..} => println!("sprite #0 image data is unloaded"),
     }

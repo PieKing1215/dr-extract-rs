@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{collections::HashMap, convert::TryInto};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use image::DynamicImage;
@@ -8,12 +8,11 @@ use super::{Chunk, read_string_ptr};
 
 #[derive(Debug)]
 pub struct Sprt {
-    pub sprites: Vec<SpriteEntry>,
+    pub sprites: HashMap<String, SpriteEntry>,
 }
 
 #[derive(Debug)]
 pub struct SpriteEntry {
-    pub name: String,
     pub width: i32,
     pub height: i32,
     pub margin_left: i32,
@@ -44,7 +43,7 @@ impl Chunk for Sprt {
     fn parse(buf: &mut std::io::Cursor<Vec<u8>>) -> anyhow::Result<Self> where Self: std::marker::Sized {
         let entries_addr_ct = buf.read_i32::<LittleEndian>()?;
         let entries_addrs = (0..entries_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
-        let mut sprites = Vec::new();
+        let mut sprites = HashMap::new();
         for addr in entries_addrs {
             buf.set_position(addr.try_into()?);
             // println!("{}", buf.position());
@@ -70,8 +69,7 @@ impl Chunk for Sprt {
             let texture_count = buf.read_i32::<LittleEndian>()?;
             let texture_addresses = (0..texture_count).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
 
-            sprites.push(SpriteEntry {
-                name,
+            sprites.insert(name, SpriteEntry {
                 width,
                 height,
                 margin_left,

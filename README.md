@@ -2,7 +2,7 @@
     <a href="https://github.com/PieKing1215/dr-extract-rs/actions/workflows/rust_build_test.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/PieKing1215/dr-extract-rs/Rust%20Build+Test"></a>
 </h1>
 
-A WIP Rust library for parsing and extracting assets from [DELTARUNE](https://deltarune.com)'s data.win.
+A WIP Rust library for flexibly parsing and extracting assets from [DELTARUNE](https://deltarune.com)'s data.win.
 
 This is not just a dumping tool, everything is loaded into memory and can be accessed directly from your Rust code.
 
@@ -46,7 +46,7 @@ To run it, do `cargo run --release --example dump` and it will dump from `./data
 
 While this is neat and all, this is a *library*, not just a tool for dumping to files.
 
-I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image data) for individual chunks that have assets (currently TXTR, SPRT; eventually SOND + more?)
+I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image data) for individual chunks that have assets (currently TXTR, SPRT; eventually SOND + more?). For sprites, you can also choose to load the image data for only certain sprites (by name). 
 
 After a chunk is parsed, you can access the parsed data as a pretty simple set of structs. 
 
