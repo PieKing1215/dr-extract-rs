@@ -54,7 +54,7 @@ See [examples/simple.rs](examples/simple.rs) for an example of the logic flow.
 
 ## License
 
-dr-extract is licensed under either of
+Licensed under either of
 
  * Apache License, Version 2.0
    ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
