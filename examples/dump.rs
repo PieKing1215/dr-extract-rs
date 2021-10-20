@@ -29,12 +29,12 @@ fn main() {
     if let Some(txtr) = &data.txtr {
         for (i, spr) in txtr.spritesheets.iter().enumerate() {
             match &spr.png {
-                dr_extract::PNGState::Loaded { texture } => {
+                dr_extract::chunk::PNGState::Loaded { texture } => {
                     // println!("{}: {:?}", i, texture.dimensions());
     
                     texture.save(format!("extract/spritesheet/{}.png", i)).unwrap();
                 }
-                dr_extract::PNGState::Unloaded { .. } => {
+                dr_extract::chunk::PNGState::Unloaded { .. } => {
                     println!("Spritesheet {} not loaded.", i);
                 },
             }
@@ -49,14 +49,14 @@ fn main() {
     if let Some(sprt) = &data.sprt {
         for spr in &sprt.sprites {
             match &spr.textures {
-                dr_extract::SpriteState::Loaded { textures } => {
+                dr_extract::chunk::SpriteState::Loaded { textures } => {
                     // println!("{}: {:?}", spr.name, textures.len());
     
                     for (i, tex) in textures.iter().enumerate() {
                         tex.save(format!("extract/sprite/{}_{}.png", spr.name, i)).unwrap();
                     }
                 }
-                dr_extract::SpriteState::Unloaded { .. } => {
+                dr_extract::chunk::SpriteState::Unloaded { .. } => {
                     println!("Sprite {} not loaded.", spr.name);
                 },
             }
