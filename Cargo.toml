@@ -2,6 +2,11 @@
 name = "dr-extract"
 version = "0.1.0"
 edition = "2018"
+description = "WIP Rust library for parsing and extracting assets from DELTARUNE's data.win."
+license = "TBD"
+repository = "https://github.com/PieKing1215/dr-extract-rs"
+keywords = ["extractor", "unpacker", "gamemaker", "deltarune"]
+categories = ["encoding", "multimedia"]
 
 [dependencies]
 thiserror = "1.0"

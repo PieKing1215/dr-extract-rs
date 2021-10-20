@@ -1,3 +1,10 @@
+#![deny(clippy::all)]
+#![deny(clippy::cargo)]
+#![warn(clippy::pedantic)]
+
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::missing_errors_doc)]
+
 use std::{convert::TryInto, fs, io::{Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
 use image::DynamicImage;
@@ -14,6 +21,7 @@ pub enum ExtractError {
     Unknown,
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
     let p = path.as_ref();
 
@@ -24,7 +32,7 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
 
     let mut buf = Cursor::new(bytes);
 
-    let mut form_chunk_name_buf = [0u8; 4];
+    let mut form_chunk_name_buf = [0_u8; 4];
     buf.read_exact(&mut form_chunk_name_buf).expect("failed to read");
     let form_chunk_len = buf.read_i32::<LittleEndian>()?;
 
@@ -37,24 +45,25 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
 
     println!("chunk {}, len: {}", String::from_utf8_lossy(&form_chunk_name_buf), form_chunk_len);
     if &form_chunk_name_buf == b"FORM" {
-        while buf.position() < n_bytes.try_into().unwrap() {
-            let mut chunk_name_buf = [0u8; 4];
+        while buf.position() < n_bytes.try_into()? {
+            let mut chunk_name_buf = [0_u8; 4];
             buf.read_exact(&mut chunk_name_buf).expect("failed to read");
             let chunk_len = buf.read_i32::<LittleEndian>()?;
 
             println!("chunk {}, len: {}", String::from_utf8_lossy(&chunk_name_buf), chunk_len);
             let this_chunk_pos = buf.position();
 
+            #[allow(clippy::match_same_arms)]
             match &chunk_name_buf {
                 b"GEN8" => {
                     let debug = buf.read_u8()?;
-                    let _unknown1 = buf.read_i24::<LittleEndian>()?;
+                    let unknown1 = buf.read_i24::<LittleEndian>()?;
                     let filename = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
                     let config = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
                     let last_obj = buf.read_u32::<LittleEndian>()?;
                     let last_tile = buf.read_u32::<LittleEndian>()?;
                     let game_id = buf.read_u32::<LittleEndian>()?;
-                    let _unknown2 = (0..4).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
+                    let unknown2 = (0..4).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
                     let name = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
                     let major = buf.read_i32::<LittleEndian>()?;
                     let minor = buf.read_i32::<LittleEndian>()?;
@@ -68,20 +77,20 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                     let timestamp = buf.read_u64::<LittleEndian>()?;
                     let display_name = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
                     let active_targets = buf.read_u32::<LittleEndian>()?; // unknown flags: GameTargets
-                    let _unknown3 = (0..4).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
+                    let unknown3 = (0..4).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
                     let steam_app_id = buf.read_u32::<LittleEndian>()?;
                     let number_count = buf.read_u32::<LittleEndian>()?;
                     let numbers = (0..number_count).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
 
                     gen8 = Some(Gen8 {
                         debug,
-                        _unknown1,
+                        _unknown1: unknown1,
                         filename,
                         config,
                         last_obj,
                         last_tile,
                         game_id,
-                        _unknown2,
+                        _unknown2: unknown2,
                         name,
                         major,
                         minor,
@@ -95,16 +104,16 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                         timestamp,
                         display_name,
                         active_targets,
-                        _unknown3,
+                        _unknown3: unknown3,
                         steam_app_id,
                         number_count,
                         numbers,
                     });
                 },
                 b"OPTN" => {
-                    let _unknown1 = (0..2).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
+                    let unknown1 = (0..2).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
                     let info = buf.read_u32::<LittleEndian>()?; // could parse more: InfoFlags
-                    let _unknown2 = (0..0xC).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
+                    let unknown2 = (0..0xC).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
                     let constants_addr_ct = buf.read_i32::<LittleEndian>()?;
                     let constants_addrs = (0..constants_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
                     let constant_map = (0..constants_addrs.len()).map(|_| {
@@ -112,11 +121,11 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                     }).collect::<Result<Vec<(String, String)>, anyhow::Error>>()?;
 
                     optn = Some(Optn {
-                        _unknown1,
+                        _unknown1: unknown1,
                         info,
-                        _unknown2,
+                        _unknown2: unknown2,
                         constant_map,
-                    })
+                    });
                 },
                 b"EXTN" => {
                     // unused
@@ -125,14 +134,14 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                     let entries_addr_ct = buf.read_i32::<LittleEndian>()?;
                     let entries_addrs = (0..entries_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
                     let mut sounds = Vec::new();
-                    for i in 0..entries_addrs.len() {
-                        buf.set_position(entries_addrs[i].try_into().unwrap());
+                    for addr in entries_addrs {
+                        buf.set_position(addr.try_into()?);
 
                         let name = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
                         let flags = buf.read_u32::<LittleEndian>()?;
                         let type_ = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
                         let file = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
-                        let _unknown1 = buf.read_u32::<LittleEndian>()?;
+                        let unknown1 = buf.read_u32::<LittleEndian>()?;
                         let volume = buf.read_f32::<LittleEndian>()?;
                         let pitch = buf.read_f32::<LittleEndian>()?;
                         let group_id = buf.read_i32::<LittleEndian>()?;
@@ -143,7 +152,7 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                             flags,
                             type_,
                             file,
-                            _unknown1,
+                            _unknown1: unknown1,
                             volume,
                             pitch,
                             group_id,
@@ -162,8 +171,8 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                     let entries_addr_ct = buf.read_i32::<LittleEndian>()?;
                     let entries_addrs = (0..entries_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
                     let mut sprites = Vec::new();
-                    for i in 0..entries_addrs.len() {
-                        buf.set_position(entries_addrs[i].try_into().unwrap());
+                    for addr in entries_addrs {
+                        buf.set_position(addr.try_into()?);
                         // println!("{}", buf.position());
 
                         let name = read_string_at(buf.read_i32::<LittleEndian>()? as u64, &mut buf)?;
@@ -173,7 +182,7 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                         let margin_right = buf.read_i32::<LittleEndian>()?;
                         let margin_bottom = buf.read_i32::<LittleEndian>()?;
                         let margin_top = buf.read_i32::<LittleEndian>()?;
-                        let _unknown1 = (0..3).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
+                        let unknown1 = (0..3).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
                         let bbox_mode = buf.read_u32::<LittleEndian>()?;
                         let sep_masks = buf.read_u32::<LittleEndian>()?;
                         let origin_x = buf.read_u32::<LittleEndian>()?;
@@ -186,9 +195,6 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                         // let _unknown6 = buf.read_u32::<LittleEndian>()?;
                         let texture_count = buf.read_i32::<LittleEndian>()?;
                         let texture_addresses = (0..texture_count).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
-                        for addr in &texture_addresses {
-                            // assert!(*addr != 0, "texture_address == 0 in sprite @ position {}", entries_addrs[i]);
-                        }
 
                         sprites.push(SpriteEntry {
                             name,
@@ -198,7 +204,7 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                             margin_right,
                             margin_bottom,
                             margin_top,
-                            _unknown1,
+                            _unknown1: unknown1,
                             bbox_mode,
                             sep_masks,
                             origin_x,
@@ -245,12 +251,9 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                     let entries_addr_ct = buf.read_i32::<LittleEndian>()?;
                     let entries_addrs = (0..entries_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
                     let mut textures = Vec::new();
-                    for i in 0..entries_addrs.len() {
-                        buf.set_position(entries_addrs[i].try_into().unwrap());
+                    for addr in entries_addrs {
+                        buf.set_position(addr.try_into()?);
                         // println!("{}", buf.position());
-                        // if buf.position() == 0x011c9c72 {
-                        //     panic!("here!!");
-                        // }
 
                         let x = buf.read_u16::<LittleEndian>()?;
                         let y = buf.read_u16::<LittleEndian>()?;
@@ -276,7 +279,7 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                             bouding_width,
                             bouding_height,
                             spritesheet_id,
-                        })
+                        });
                     }
 
                     tpag = Some(Tpag {
@@ -299,16 +302,16 @@ pub fn parse<P: AsRef<Path>>(path: P) -> Result<DataWin, anyhow::Error>{
                     let entries_addr_ct = buf.read_i32::<LittleEndian>()?;
                     let entries_addrs = (0..entries_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
                     let mut spritesheets = Vec::new();
-                    for i in 0..entries_addrs.len() {
-                        buf.set_position(entries_addrs[i].try_into().unwrap());
+                    for addr in entries_addrs {
+                        buf.set_position(addr.try_into()?);
 
-                        let _unknown1 = buf.read_u32::<LittleEndian>()?;
-                        let _unknown2 = buf.read_u32::<LittleEndian>()?; // this differs from the unpacking page, but is necessary now
+                        let unknown1 = buf.read_u32::<LittleEndian>()?;
+                        let unknown2 = buf.read_u32::<LittleEndian>()?; // this differs from the unpacking page, but is necessary now
                         let png_addr = buf.read_u32::<LittleEndian>()?;
 
                         spritesheets.push(SpritesheetEntry {
-                            _unknown1,
-                            _unknown2,
+                            _unknown1: unknown1,
+                            _unknown2: unknown2,
                             png: PNGState::Unloaded {
                                 png_addr,
                             },
@@ -383,19 +386,16 @@ impl DataWin {
 
         if let Some(txtr) = &mut self.txtr {
             for spr in &mut txtr.spritesheets {
-                match spr.png {
-                    PNGState::Unloaded { png_addr } => {
-                        self.buf.set_position(png_addr.into());
+                if let PNGState::Unloaded { png_addr } = spr.png {
+                    self.buf.set_position(png_addr.into());
 
-                        let texture = image::io::Reader::new(&mut self.buf)
-                            .with_guessed_format()?
-                            .decode()?;
+                    let texture = image::io::Reader::new(&mut self.buf)
+                        .with_guessed_format()?
+                        .decode()?;
 
-                        spr.png = PNGState::Loaded {
-                            texture
-                        };
-                    }
-                    _ => {},
+                    spr.png = PNGState::Loaded {
+                        texture
+                    };
                 }
             }
         }
@@ -412,64 +412,61 @@ impl DataWin {
             // if let Some(tpag) = &mut self.tpag {
                 if let Some(txtr) = &mut self.txtr {
                     for spr in &mut sprt.sprites {
-                        match &spr.textures {
-                            SpriteState::Unloaded { texture_count: _, texture_addresses } => {
+                        if let SpriteState::Unloaded { texture_count: _, texture_addresses } = &spr.textures {
 
-                                let mut textures = Vec::new();
+                            let mut textures = Vec::new();
 
-                                for addr in texture_addresses {
-                                    self.buf.set_position(*addr as u64);
+                            for addr in texture_addresses {
+                                self.buf.set_position(*addr as u64);
 
-                                    if *addr != 0 {
-                                        let x = self.buf.read_u16::<LittleEndian>()?;
-                                        let y = self.buf.read_u16::<LittleEndian>()?;
-                                        let width = self.buf.read_u16::<LittleEndian>()?;
-                                        let height = self.buf.read_u16::<LittleEndian>()?;
-                                        let render_x = self.buf.read_u16::<LittleEndian>()?;
-                                        let render_y = self.buf.read_u16::<LittleEndian>()?;
-                                        let bouding_x = self.buf.read_u16::<LittleEndian>()?;
-                                        let bouding_y = self.buf.read_u16::<LittleEndian>()?;
-                                        let bouding_width = self.buf.read_u16::<LittleEndian>()?;
-                                        let bouding_height = self.buf.read_u16::<LittleEndian>()?;
-                                        let spritesheet_id = self.buf.read_u16::<LittleEndian>()?;
+                                if *addr == 0 {
+                                    println!("sprite {} has a texture_addr == 0", spr.name);
+                                }else{
+                                    let x = self.buf.read_u16::<LittleEndian>()?;
+                                    let y = self.buf.read_u16::<LittleEndian>()?;
+                                    let width = self.buf.read_u16::<LittleEndian>()?;
+                                    let height = self.buf.read_u16::<LittleEndian>()?;
+                                    let render_x = self.buf.read_u16::<LittleEndian>()?;
+                                    let render_y = self.buf.read_u16::<LittleEndian>()?;
+                                    let bouding_x = self.buf.read_u16::<LittleEndian>()?;
+                                    let bouding_y = self.buf.read_u16::<LittleEndian>()?;
+                                    let bouding_width = self.buf.read_u16::<LittleEndian>()?;
+                                    let bouding_height = self.buf.read_u16::<LittleEndian>()?;
+                                    let spritesheet_id = self.buf.read_u16::<LittleEndian>()?;
 
-                                        let tex = TextureEntry {
-                                            x,
-                                            y,
-                                            width,
-                                            height,
-                                            render_x,
-                                            render_y,
-                                            bouding_x,
-                                            bouding_y,
-                                            bouding_width,
-                                            bouding_height,
-                                            spritesheet_id,
-                                        };
+                                    let tex = TextureEntry {
+                                        x,
+                                        y,
+                                        width,
+                                        height,
+                                        render_x,
+                                        render_y,
+                                        bouding_x,
+                                        bouding_y,
+                                        bouding_width,
+                                        bouding_height,
+                                        spritesheet_id,
+                                    };
 
-                                        // println!("addr = {}, spritesheet_id = {}", addr, spritesheet_id);
+                                    // println!("addr = {}, spritesheet_id = {}", addr, spritesheet_id);
 
-                                        let sheet = &mut txtr.spritesheets[tex.spritesheet_id as usize];
-                                        let texture = match &mut sheet.png {
-                                            PNGState::Loaded { texture } => {
-                                                Ok(texture.crop(tex.x as u32, tex.y as u32, tex.width as u32, tex.height as u32))
-                                            }
-                                            _ => Err(anyhow::anyhow!("Spritesheet not loaded!")),
-                                        }?;
+                                    let sheet = &mut txtr.spritesheets[tex.spritesheet_id as usize];
+                                    let texture = match &mut sheet.png {
+                                        PNGState::Loaded { texture } => {
+                                            Ok(texture.crop(u32::from(tex.x), u32::from(tex.y), u32::from(tex.width), u32::from(tex.height)))
+                                        }
+                                        PNGState::Unloaded{ .. } => Err(anyhow::anyhow!("Spritesheet not loaded!")),
+                                    }?;
 
-                                        textures.push(texture);
-                                    }else{
-                                        println!("sprite {} has a texture_addr == 0", spr.name);
-                                    }
+                                    textures.push(texture);
                                 }
-
-                                // assert_eq!(textures.len(), texture_addresses.len());
-
-                                spr.textures = SpriteState::Loaded {
-                                    textures
-                                };
                             }
-                            _ => {},
+
+                            // assert_eq!(textures.len(), texture_addresses.len());
+
+                            spr.textures = SpriteState::Loaded {
+                                textures
+                            };
                         }
                     }
                 }
