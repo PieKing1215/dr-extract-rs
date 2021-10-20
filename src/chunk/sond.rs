@@ -58,4 +58,8 @@ impl Chunk for Sond {
             sounds,
         })
     }
+
+    fn get_id() -> [u8; 4] {
+        *b"SOND"
+    }
 }

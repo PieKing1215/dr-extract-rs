@@ -18,6 +18,7 @@ pub use txtr::*;
 
 pub trait Chunk {
     fn parse(buf: &mut Cursor<Vec<u8>>) -> anyhow::Result<Self> where Self: std::marker::Sized;
+    fn get_id() -> [u8; 4];
 }
 
 fn read_string_ptr(buf: &mut Cursor<Vec<u8>>) -> Result<String, anyhow::Error> {

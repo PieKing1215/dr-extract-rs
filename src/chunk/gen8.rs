@@ -88,4 +88,8 @@ impl Chunk for Gen8 {
             numbers,
         })
     }
+
+    fn get_id() -> [u8; 4] {
+        *b"GEN8"
+    }
 }

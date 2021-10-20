@@ -94,4 +94,8 @@ impl Chunk for Sprt {
             sprites,
         })
     }
+
+    fn get_id() -> [u8; 4] {
+        *b"SPRT"
+    }
 }

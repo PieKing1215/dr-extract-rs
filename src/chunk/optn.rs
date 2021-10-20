@@ -30,4 +30,8 @@ impl Chunk for Optn {
             constant_map,
         })
     }
+
+    fn get_id() -> [u8; 4] {
+        *b"OPTN"
+    }
 }

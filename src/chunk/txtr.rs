@@ -53,4 +53,8 @@ impl Chunk for Txtr {
             spritesheets,
         })
     }
+
+    fn get_id() -> [u8; 4] {
+        *b"TXTR"
+    }
 }

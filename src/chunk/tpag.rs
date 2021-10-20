@@ -65,4 +65,8 @@ impl Chunk for Tpag {
             textures,
         })
     }
+
+    fn get_id() -> [u8; 4] {
+        *b"TPAG"
+    }
 }
