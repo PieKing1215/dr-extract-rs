@@ -8,7 +8,7 @@ fn main() {
     
     // set the file up for reading
     // can also use prepare_bytes(Vec<u8>) instead
-    let data_ready: DataWinReady = dr_extract::prepare_file("data.win").unwrap();
+    let data_ready: DataWinReady = dr_extract::prepare_file("data.win", vec!["audiogroup1.dat"]).unwrap();
 
     // load the chunk names and positions
     let mut data: DataWin = data_ready.fetch_chunks().unwrap();

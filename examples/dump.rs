@@ -8,7 +8,7 @@ extern crate dr_extract;
 fn main() {
     println!("Example \"dump\"...");
 
-    let mut data = dr_extract::prepare_file("data.win").expect("load_file failed")
+    let mut data = dr_extract::prepare_file("data.win", vec!["audiogroup1.dat"]).expect("load_file failed")
         .fetch_chunks().expect("fetch_chunks failed");
 
     data.parse_gen8().expect("parse_gen8 failed");

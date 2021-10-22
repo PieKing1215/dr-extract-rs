@@ -7,34 +7,37 @@
 
 use chunk::{AudioType, Audo, Gen8, Optn, PNGState, Sond, SoundEntry, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
 
-use std::{collections::HashMap, convert::TryInto, fs, io::{Cursor, Read}, path::Path};
+use std::{collections::HashMap, convert::TryInto, fs, io::{self, Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 use crate::chunk::Chunk;
 
 pub mod chunk;
 
-pub fn prepare_file<P: AsRef<Path>>(path: P) -> Result<DataWinReady, anyhow::Error> {
-    prepare_bytes(fs::read(path.as_ref())?)
+pub fn prepare_file<P: AsRef<Path>>(path: P, audiogroup_paths: Vec<P>) -> Result<DataWinReady, anyhow::Error> {
+    prepare_bytes(fs::read(path.as_ref())?, audiogroup_paths.into_iter().map(|path| fs::read(path.as_ref())).collect::<io::Result<Vec<Vec<u8>>>>()?)
 }
 
-pub fn prepare_bytes(bytes: Vec<u8>) -> Result<DataWinReady, anyhow::Error> {
+pub fn prepare_bytes(bytes: Vec<u8>, audiogroup_bytes: Vec<Vec<u8>>) -> Result<DataWinReady, anyhow::Error> {
     let n_bytes = bytes.len();
 
     // TODO: log::info!
     // println!("Given {} bytes...", n_bytes);
 
     let buf = Cursor::new(bytes);
+    let audiogroup_bufs = audiogroup_bytes.into_iter().map(Cursor::new).collect();
 
     Ok(DataWinReady {
         n_bytes,
         buf,
+        audiogroup_bufs,
     })
 }
 
 pub struct DataWinReady {
     n_bytes: usize,
     buf: Cursor<Vec<u8>>,
+    audiogroup_bufs: Vec<Cursor<Vec<u8>>>,
 }
 
 impl DataWinReady {
@@ -64,6 +67,7 @@ impl DataWinReady {
 
             Ok(DataWin {
                 buf: self.buf,
+                audiogroup_bufs: self.audiogroup_bufs,
                 chunk_addrs,
                 gen8: None,
                 optn: None,
@@ -82,6 +86,7 @@ impl DataWinReady {
 #[derive(Debug)]
 pub struct DataWin {
     buf: Cursor<Vec<u8>>,
+    audiogroup_bufs: Vec<Cursor<Vec<u8>>>,
     chunk_addrs: HashMap<[u8; 4], u64>,
     pub gen8: Option<Gen8>,
     pub optn: Option<Optn>,
@@ -89,7 +94,7 @@ pub struct DataWin {
     pub sprt: Option<Sprt>,
     pub tpag: Option<Tpag>,
     pub txtr: Option<Txtr>,
-    pub audo: Option<Audo>,
+    pub audo: Option<Vec<Audo>>,
 }
 
 impl DataWin {
@@ -146,7 +151,14 @@ impl DataWin {
 
     pub fn parse_audo(&mut self) -> anyhow::Result<()> {
         if self.audo.is_none() {
-            self.audo = Some(self.parse_chunk::<Audo>()?);
+            let mut audo_v = vec![self.parse_chunk::<Audo>()?];
+
+            for buf in &mut self.audiogroup_bufs {
+                buf.set_position(16); // manually skip 'FORM' + u32 length & 'AUDO' + u32 length since AUDO is the only chunk in these files
+                audo_v.push(Audo::parse(buf)?);
+            }
+
+            self.audo = Some(audo_v);
         }
         Ok(())
     }
@@ -277,13 +289,13 @@ impl DataWin {
     }
 
     #[allow(clippy::unnecessary_wraps)]
-    fn load_sound_raw(sound: &mut SoundEntry, audo: &mut Audo) -> anyhow::Result<()> {
+    fn load_sound_raw(sound: &mut SoundEntry, audos: &mut Vec<Audo>) -> anyhow::Result<()> {
         if sound.audio_data.is_none() {
             if sound.audio_id == -1 {
                 sound.audio_data = Some(AudioType::External);
             } else {
                 // TODO: is cloning the data here necessary? not sure if multiple sounds can have the same audio_id
-                sound.audio_data = Some(AudioType::Internal(audo.sounds[sound.audio_id as usize].clone()));
+                sound.audio_data = Some(AudioType::Internal(audos[sound.group_id as usize].sounds[sound.audio_id as usize].clone()));
             }
         }
 
@@ -292,9 +304,9 @@ impl DataWin {
 
     pub fn load_sounds(&mut self) -> anyhow::Result<()> {
         if let Some(sond) = &mut self.sond {
-            if let Some(audo) = &mut self.audo {
+            if let Some(audos) = &mut self.audo {
                 for sound in sond.sounds.values_mut() {
-                    DataWin::load_sound_raw(sound, audo)?;
+                    DataWin::load_sound_raw(sound, audos)?;
                 }
             } else {
                 return Err(anyhow::anyhow!("AUDO chunk must be parsed before calling load_sounds!"));
@@ -308,9 +320,9 @@ impl DataWin {
 
     pub fn load_sound<S: Into<String>>(&mut self, name: S) -> anyhow::Result<()> {
         if let Some(sond) = &mut self.sond {
-            if let Some(audo) = &mut self.audo {
+            if let Some(audos) = &mut self.audo {
                 if let Some(sound) = sond.sounds.get_mut(&name.into()) {
-                    DataWin::load_sound_raw(sound, audo)?;
+                    DataWin::load_sound_raw(sound, audos)?;
                 }
             } else {
                 return Err(anyhow::anyhow!("AUDO chunk must be parsed before calling load_sound!"));
