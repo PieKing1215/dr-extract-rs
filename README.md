@@ -8,7 +8,7 @@ This is not just a dumping tool, everything is loaded into memory and can be acc
 
 You must provide your own data.win & audiogroup1.dat file. I will not host it myself, nor will I host any extracted assets here.
 
-It might work for other GameMaker games, but I have not tested anything other than the DELTARUNE Chapter 1&2 Demo.
+It might work for other GameMaker 2 games, but I have not tested anything other than the DELTARUNE Chapter 1&2 Demo.
 
 Based on the documentation here: https://pcy.ulyssis.be/undertale/unpacking-corrected<br>
 (+ some adjustments for the newer version of GM)
