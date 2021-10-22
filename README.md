@@ -6,7 +6,7 @@ A WIP Rust library for flexibly parsing and extracting assets from [DELTARUNE](h
 
 This is not just a dumping tool, everything is loaded into memory and can be accessed directly from your Rust code.
 
-You must provide your own data.win file. I will not host it myself, nor will I host any extracted assets here.
+You must provide your own data.win & audiogroup1.dat file. I will not host it myself, nor will I host any extracted assets here.
 
 It might work for other GameMaker games, but I have not tested anything other than the DELTARUNE Chapter 1&2 Demo.
 
@@ -41,7 +41,7 @@ Not supported right now:
 - STRG
 
 ## Usage
-The script [examples/dump.rs](examples/dump.rs) is a simple example binary that uses the library to dump assets from a provided data.win.<br>
+The script [examples/dump.rs](examples/dump.rs) is a simple example binary that uses the library to dump assets from a provided data.win & audiogroup1.dat.<br>
 To run it, do `cargo run --release --example dump` and it will dump from `./data.win` into `./extract/`.
 
 While this is neat and all, this is a *library*, not just a tool for dumping to files.
