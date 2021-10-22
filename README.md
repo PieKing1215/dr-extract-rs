@@ -13,7 +13,7 @@ It might work for other GameMaker games, but I have not tested anything other th
 Based on the documentation here: https://pcy.ulyssis.be/undertale/unpacking-corrected<br>
 (+ some adjustments for the newer version of GM)
 
-Currently only the game metadata, audio metadata (no actual waveform data), spritesheets, and sprites are fully extractable.<br>
+Currently only the game metadata, sounds, spritesheets, and sprites are fully extractable.<br>
 More specifically, these chunks are supported right now:
 - GEN8
 - OPTN
@@ -46,13 +46,13 @@ To run it, do `cargo run --release --example dump` and it will dump from `./data
 
 While this is neat and all, this is a *library*, not just a tool for dumping to files.
 
-I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image/audio data) for individual chunks that have assets (currently TXTR, SPRT, SOND; eventually more?). For sprites, you can also choose to load the image data for only certain sprites (by name).
+I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image/audio data) for individual chunks that have assets (currently TXTR, SPRT, SOND; eventually more?). For sprites and sounds, you can also choose to load the image/audio data for only certain sprites/sounds (by name).
 
 After a chunk is parsed, you can access the parsed data as a pretty simple set of structs. 
 
 When you load the assets for TXTR/SPRT, the texture(s) are loaded into memory as `image::DynamicImage` from the [image crate](https://github.com/image-rs/image), and can be used by your program.
 
-When you load the assets for SOND/AUDO, the sound(s) are loaded into memory as `Vec<u8>` (if the audio is embedded in the data.win, otherwise you can use the sound's file field to locate the external file). The `Vec<u8>` is the raw file data for the embedded file, so you can literally just dump the bytes directly to an .ogg file, or you can use a library to parse the audio in-memory.
+When you load the assets for SOND/AUDO, the audio data is loaded into memory as a `Vec<u8>` if the audio is embedded in the data.win, otherwise you can use the sound's file field to locate the external file. The `Vec<u8>` is the raw file data for the embedded file, so you can literally just dump the bytes directly to an .ogg file, or you can use a library to parse the audio in-memory.
 
 See [examples/simple.rs](examples/simple.rs) for an example of the logic flow.
 

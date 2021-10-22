@@ -5,7 +5,7 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_errors_doc)]
 
-use chunk::{AudioType, Audo, Gen8, Optn, PNGState, Sond, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
+use chunk::{AudioType, Audo, Gen8, Optn, PNGState, Sond, SoundEntry, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
 
 use std::{collections::HashMap, convert::TryInto, fs, io::{Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -276,24 +276,47 @@ impl DataWin {
         Ok(())
     }
 
+    #[allow(clippy::unnecessary_wraps)]
+    fn load_sound_raw(sound: &mut SoundEntry, audo: &mut Audo) -> anyhow::Result<()> {
+        if sound.audio_data.is_none() {
+            if sound.audio_id == -1 {
+                sound.audio_data = Some(AudioType::External);
+            } else {
+                // TODO: is cloning the data here necessary? not sure if multiple sounds can have the same audio_id
+                sound.audio_data = Some(AudioType::Internal(audo.sounds[sound.audio_id as usize].clone()));
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn load_sounds(&mut self) -> anyhow::Result<()> {
         if let Some(sond) = &mut self.sond {
             if let Some(audo) = &mut self.audo {
                 for sound in sond.sounds.values_mut() {
-                    if sound.audio_data.is_none() {
-                        if sound.audio_id == -1 {
-                            sound.audio_data = Some(AudioType::External);
-                        } else {
-                            // TODO: is cloning the data here necessary? not sure if multiple sounds can have the same audio_id
-                            sound.audio_data = Some(AudioType::Internal(audo.sounds[sound.audio_id as usize].clone()));
-                        }
-                    }
+                    DataWin::load_sound_raw(sound, audo)?;
                 }
             } else {
                 return Err(anyhow::anyhow!("AUDO chunk must be parsed before calling load_sounds!"));
             }
         } else {
             return Err(anyhow::anyhow!("SOND chunk must be parsed before calling load_sounds!"));
+        }
+
+        Ok(())
+    }
+
+    pub fn load_sound<S: Into<String>>(&mut self, name: S) -> anyhow::Result<()> {
+        if let Some(sond) = &mut self.sond {
+            if let Some(audo) = &mut self.audo {
+                if let Some(sound) = sond.sounds.get_mut(&name.into()) {
+                    DataWin::load_sound_raw(sound, audo)?;
+                }
+            } else {
+                return Err(anyhow::anyhow!("AUDO chunk must be parsed before calling load_sound!"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("SOND chunk must be parsed before calling load_sound!"));
         }
 
         Ok(())

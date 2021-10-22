@@ -53,11 +53,33 @@ fn main() {
     // requires load_spritesheets to have been called already
     data.load_sprites().unwrap();
     
-    
     // now prints loaded
     match data.sprt.as_ref().unwrap().sprites.values().next().unwrap().textures {
         SpriteState::Loaded{..} => println!("sprite #0 image data is loaded"),
         SpriteState::Unloaded{..} => println!("sprite #0 image data is unloaded"),
+    }
+    // this allows you to read sprite images like this:
+    match &data.sprt.as_ref().unwrap().sprites.get("spr_krisplace").unwrap().textures {
+        SpriteState::Unloaded { texture_count, texture_addresses } => {},
+        SpriteState::Loaded { textures } => {},
+    }
+
+    // can also load sounds like this:
+    data.parse_sond().unwrap();
+    data.parse_audo().unwrap();
+
+    data.load_sounds().unwrap();
+    // or load individual sounds with data.load_sound(String)
+
+    println!("# of sounds = {}", data.sond.as_ref().unwrap().sounds.len());
+
+    // now you can access the bytes of a sound file like this:
+    let sound = data.sond.as_ref().unwrap().sounds.get("snd_heartshot_dr_b").unwrap();
+    match sound.audio_data.as_ref().unwrap() {
+        dr_extract::chunk::AudioType::Internal(bytes) => {
+            println!("audio file is {} bytes", bytes.len());
+        },
+        dr_extract::chunk::AudioType::External => { /* sound.file contains the name of the external ogg file */},
     }
 
     println!("Done!");
