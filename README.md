@@ -42,7 +42,7 @@ Not supported right now:
 
 ## Usage
 The script [examples/dump.rs](examples/dump.rs) is a simple example binary that uses the library to dump assets from a provided data.win & audiogroup1.dat.<br>
-To run it, do `cargo run --release --example dump` and it will dump from `./data.win` into `./extract/`.
+To run it, do `cargo run --release --example dump` and it will dump from `./data.win` & `./audiogroup1.dat` into `./extract/`.
 
 While this is neat and all, this is a *library*, not just a tool for dumping to files.
 
