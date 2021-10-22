@@ -8,6 +8,7 @@ mod sond;
 mod sprt;
 mod tpag;
 mod txtr;
+mod audo;
 use byteorder::{LittleEndian, ReadBytesExt};
 pub use gen8::*;
 pub use optn::*;
@@ -15,6 +16,7 @@ pub use sond::*;
 pub use sprt::*;
 pub use tpag::*;
 pub use txtr::*;
+pub use audo::*;
 
 pub trait Chunk {
     fn parse(buf: &mut Cursor<Vec<u8>>) -> anyhow::Result<Self> where Self: std::marker::Sized;

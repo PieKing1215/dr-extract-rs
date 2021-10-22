@@ -1,7 +1,7 @@
 //! Example program that extracts assets from a data.win file in the working directory.
 //! The extracted assets are placed in ./extract/
 
-use std::{fs, time::Instant};
+use std::{fs, io::Write, path::Path, time::Instant};
 
 extern crate dr_extract;
 
@@ -76,6 +76,36 @@ fn main() {
             }
         }
     }
+
+    println!("Parsing sounds...");
+    data.parse_sond().expect("parse_sond failed");
+
+    println!("Parsing audio data...");
+    data.parse_audo().expect("parse_audo failed");
+
+    println!("Loading sound data...");
+    let start = Instant::now();
+    data.load_sounds().expect("Loading sounds failed");
+    println!("Took {} ms", Instant::now().saturating_duration_since(start).as_millis());
+
+    println!("Dumping sounds...");
+    fs::create_dir_all("extract/sound/").unwrap();
+    if let Some(sond) = &data.sond {
+        for (name, sound) in &sond.sounds {
+            if let Some(audio) = &sound.audio_data {
+                match audio {
+                    dr_extract::chunk::AudioType::Internal(data) => {
+                        let mut f = fs::OpenOptions::new().create(true).append(true).open(format!("extract/sound/{}.ogg", name)).expect("File open failed");
+                        f.write_all(data).unwrap();
+                    },
+                    dr_extract::chunk::AudioType::External => {
+                        println!("{} has external audio: {}", name, sound.file);
+                    },
+                }
+            }
+        }
+    }
+    
 
     println!("Done!");
 }

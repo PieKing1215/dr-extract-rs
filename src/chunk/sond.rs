@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{collections::HashMap, convert::TryInto};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -7,12 +7,11 @@ use super::{Chunk, read_string_ptr};
 
 #[derive(Debug)]
 pub struct Sond {
-    pub sounds: Vec<SoundEntry>,
+    pub sounds: HashMap<String, SoundEntry>,
 }
 
 #[derive(Debug)]
 pub struct SoundEntry {
-    pub name: String,
     pub flags: u32, // SoundEntryFlags
     pub type_: String,
     pub file: String,
@@ -21,13 +20,20 @@ pub struct SoundEntry {
     pub pitch: f32,
     pub group_id: i32,
     pub audio_id: i32,
+    pub audio_data: Option<AudioType>,
+}
+
+#[derive(Debug)]
+pub enum AudioType {
+    Internal(Vec<u8>),
+    External,
 }
 
 impl Chunk for Sond {
     fn parse(buf: &mut std::io::Cursor<Vec<u8>>) -> anyhow::Result<Self> where Self: std::marker::Sized {
         let entries_addr_ct = buf.read_i32::<LittleEndian>()?;
         let entries_addrs = (0..entries_addr_ct).map(|_| buf.read_i32::<LittleEndian>()).collect::<Result<Vec<i32>, std::io::Error>>()?;
-        let mut sounds = Vec::new();
+        let mut sounds = HashMap::new();
         for addr in entries_addrs {
             buf.set_position(addr.try_into()?);
 
@@ -41,8 +47,7 @@ impl Chunk for Sond {
             let group_id = buf.read_i32::<LittleEndian>()?;
             let audio_id = buf.read_i32::<LittleEndian>()?;
 
-            sounds.push(SoundEntry {
-                name,
+            sounds.insert(name, SoundEntry {
                 flags,
                 type_,
                 file,
@@ -51,6 +56,7 @@ impl Chunk for Sond {
                 pitch,
                 group_id,
                 audio_id,
+                audio_data: None,
             });
         }
 

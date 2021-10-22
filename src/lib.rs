@@ -5,7 +5,7 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_errors_doc)]
 
-use chunk::{Gen8, Optn, PNGState, Sond, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
+use chunk::{AudioType, Audo, Gen8, Optn, PNGState, Sond, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
 
 use std::{collections::HashMap, convert::TryInto, fs, io::{Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -71,6 +71,7 @@ impl DataWinReady {
                 sprt: None,
                 tpag: None,
                 txtr: None,
+                audo: None,
             })
         }else {
             Err(anyhow::anyhow!("Could not find \"FORM\" chunk!"))
@@ -88,6 +89,7 @@ pub struct DataWin {
     pub sprt: Option<Sprt>,
     pub tpag: Option<Tpag>,
     pub txtr: Option<Txtr>,
+    pub audo: Option<Audo>,
 }
 
 impl DataWin {
@@ -138,6 +140,13 @@ impl DataWin {
     pub fn parse_txtr(&mut self) -> anyhow::Result<()> {
         if self.txtr.is_none() {
             self.txtr = Some(self.parse_chunk::<Txtr>()?);
+        }
+        Ok(())
+    }
+
+    pub fn parse_audo(&mut self) -> anyhow::Result<()> {
+        if self.audo.is_none() {
+            self.audo = Some(self.parse_chunk::<Audo>()?);
         }
         Ok(())
     }
@@ -262,6 +271,29 @@ impl DataWin {
             // }
         } else {
             return Err(anyhow::anyhow!("SPRT chunk must be parsed before calling load_sprites!"));
+        }
+
+        Ok(())
+    }
+
+    pub fn load_sounds(&mut self) -> anyhow::Result<()> {
+        if let Some(sond) = &mut self.sond {
+            if let Some(audo) = &mut self.audo {
+                for sound in sond.sounds.values_mut() {
+                    if sound.audio_data.is_none() {
+                        if sound.audio_id == -1 {
+                            sound.audio_data = Some(AudioType::External);
+                        } else {
+                            // TODO: is cloning the data here necessary? not sure if multiple sounds can have the same audio_id
+                            sound.audio_data = Some(AudioType::Internal(audo.sounds[sound.audio_id as usize].clone()));
+                        }
+                    }
+                }
+            } else {
+                return Err(anyhow::anyhow!("AUDO chunk must be parsed before calling load_sounds!"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("SOND chunk must be parsed before calling load_sounds!"));
         }
 
         Ok(())
