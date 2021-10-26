@@ -46,7 +46,7 @@ To run it, do `cargo run --release --example dump` and it will dump from `./data
 
 While this is neat and all, this is a *library*, not just a tool for dumping to files.
 
-I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image/audio data) for individual chunks that have assets (currently TXTR, SPRT, SOND; eventually more?). For sprites and sounds, you can also choose to load the image/audio data for only certain sprites/sounds (by name).
+I want this library to be very controllable: you should be able to tell it exactly what to load and when to do it.<br>This goal is a WIP: currently you control when to parse each individual chunk, and when to load assets (ie. image/audio data) for individual chunks that have assets (currently TXTR, SPRT, SOND, FONT; eventually more?). For sprites and sounds, you can also choose to load the image/audio data for only certain sprites/sounds (by name).
 
 After a chunk is parsed, you can access the parsed data as a pretty simple set of structs. 
 
