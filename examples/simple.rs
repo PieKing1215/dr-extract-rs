@@ -1,4 +1,7 @@
-use dr_extract::{DataWin, DataWinReady, chunk::{PNGState, SpriteState, SpritesheetEntry}};
+use std::collections::HashMap;
+
+use dr_extract::{DataWin, DataWinReady, chunk::{FontEntry, Glyph, PNGState, SpriteState}};
+use image::{DynamicImage, GenericImageView};
 
 
 extern crate dr_extract;
@@ -61,15 +64,17 @@ fn main() {
     // this allows you to read sprite images like this:
     match &data.sprt.as_ref().unwrap().sprites.get("spr_krisplace").unwrap().textures {
         SpriteState::Unloaded { texture_count, texture_addresses } => {},
-        SpriteState::Loaded { textures } => {},
+        SpriteState::Loaded { textures } => {
+            println!("Here is spr_krisplace:");
+            print_img(&textures[0]); // if the sprite has multiple frames, they are all in this Vec
+        },
     }
 
-    // can also load sounds like this:
-    data.parse_sond().unwrap();
+    // load sounds like this:
+    data.parse_sond().unwrap(); // (sond has the metadata and audo has the actual audio data)
     data.parse_audo().unwrap();
 
-    data.load_sounds().unwrap();
-    // or load individual sounds with data.load_sound(String)
+    data.load_sounds().unwrap(); // or load individual sounds with data.load_sound(String)
 
     println!("# of sounds = {}", data.sond.as_ref().unwrap().sounds.len());
 
@@ -82,8 +87,33 @@ fn main() {
         dr_extract::chunk::AudioType::External => { /* sound.file contains the name of the external ogg file */},
     }
 
+    // parse & load fonts
     data.parse_font().unwrap();
     data.load_fonts().unwrap();
 
+    println!("# of fonts = {}", data.font.as_ref().unwrap().fonts.len());
+
+    // now you can access the textures for each glyph of each font
+    let f: &FontEntry = data.font.as_ref().unwrap().fonts.get("fnt_main").unwrap();
+    let gl: &HashMap<u16, Glyph> = &f.glyphs;
+
+    let tex_Q: &DynamicImage = gl.get(&('Q' as u16)).unwrap().texture.as_ref().unwrap();
+    println!("Here is the letter Q:");
+    print_img(tex_Q);
+
+    let tex_ast: &DynamicImage = gl.get(&('*' as u16)).unwrap().texture.as_ref().unwrap();
+    println!("Here is an asterisk:");
+    print_img(tex_ast);
+
     println!("Done!");
+}
+
+fn print_img(img: &DynamicImage) {
+    for y in 0..img.height() {
+        for x in 0..img.width() {
+            // the .0 is a [u8; 4] of rgba
+            print!("{}", if img.get_pixel(x, y).0[3] > 0 && img.get_pixel(x, y).0[2] > 0 { "██" } else { "  " });
+        }
+        println!();
+    }
 }
