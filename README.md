@@ -50,7 +50,7 @@ I want this library to be very controllable: you should be able to tell it exact
 
 After a chunk is parsed, you can access the parsed data as a pretty simple set of structs. 
 
-When you load the assets for TXTR/SPRT, the texture(s) are loaded into memory as `image::DynamicImage` from the [image crate](https://github.com/image-rs/image), and can be used by your program.
+When you load the assets for TXTR/SPRT/FONT, the texture(s) are loaded into memory as `image::DynamicImage` from the [image crate](https://github.com/image-rs/image), and can be used by your program.
 
 When you load the assets for SOND/AUDO, the audio data is loaded into memory as a `Vec<u8>` if the audio is embedded in the data.win, otherwise you can use the sound's `file` field to locate the external file. The `Vec<u8>` is the raw file data for the embedded file, so you can literally just dump the bytes directly to an .ogg file, or you can use a library to parse the audio in-memory.
 
