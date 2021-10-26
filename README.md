@@ -6,14 +6,14 @@ A WIP Rust library for flexibly parsing and extracting assets from [DELTARUNE](h
 
 This is not just a dumping tool, everything is loaded into memory and can be accessed directly from your Rust code.
 
-You must provide your own data.win & audiogroup1.dat file. I will not host it myself, nor will I host any extracted assets here.
+You must provide your own data.win & audiogroup1.dat file. I will not host them myself, nor will I host any extracted assets here.
 
 It might work for other GameMaker 2 games, but I have not tested anything other than the DELTARUNE Chapter 1&2 Demo.
 
 Based on the documentation here: https://pcy.ulyssis.be/undertale/unpacking-corrected<br>
 (+ some adjustments for the newer version of GM)
 
-Currently only the game metadata, sounds, spritesheets, and sprites are fully extractable.<br>
+Currently the game metadata, sounds, fonts, spritesheets, and sprites are fully extractable.<br>
 More specifically, these chunks are supported right now:
 - GEN8
 - OPTN
@@ -22,6 +22,7 @@ More specifically, these chunks are supported right now:
 - TPAG
 - TXTR
 - AUDO
+- FONT
 
 Not supported right now:
 - EXTN (unused)
@@ -30,7 +31,6 @@ Not supported right now:
 - PATH
 - SCPT
 - SHDR (unused)
-- FONT
 - TMLN
 - OBJT
 - ROOM

@@ -82,5 +82,8 @@ fn main() {
         dr_extract::chunk::AudioType::External => { /* sound.file contains the name of the external ogg file */},
     }
 
+    data.parse_font().unwrap();
+    data.load_fonts().unwrap();
+
     println!("Done!");
 }

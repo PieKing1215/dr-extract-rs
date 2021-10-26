@@ -3,6 +3,8 @@
 
 use std::{fs, io::Write, path::Path, time::Instant};
 
+use image::GenericImageView;
+
 extern crate dr_extract;
 
 fn main() {
@@ -106,6 +108,32 @@ fn main() {
         }
     }
     
+    println!("Parsing fonts...");
+    data.parse_font().expect("parse_font failed");
+
+    println!("Loading fonts...");
+    let start = Instant::now();
+    data.load_fonts().expect("Loading fonts failed");
+
+    println!("Took {} ms", Instant::now().saturating_duration_since(start).as_millis());
+
+    println!("Dumping fonts...");
+    fs::create_dir_all("extract/font/").unwrap();
+    if let Some(font) = &data.font {
+        for (name, fnt) in &font.fonts {
+            fs::create_dir_all(format!("extract/font/{}/", name)).unwrap();
+
+            for (char, gly) in &fnt.glyphs {
+                if let Some(tex) = &gly.texture {
+                    if tex.width() > 0 && tex.height() > 0 {
+                        tex.save(format!("extract/font/{}/{}.png", name, char)).unwrap();
+                    } else {
+                        println!("{} has 0 size", format!("extract/font/{}/{}.png", name, char));
+                    }
+                }
+            }
+        }
+    }
 
     println!("Done!");
 }
