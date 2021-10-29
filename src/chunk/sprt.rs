@@ -22,8 +22,8 @@ pub struct SpriteEntry {
     pub _unknown1: Vec<u32>,
     pub bbox_mode: u32,
     pub sep_masks: u32,
-    pub origin_x: u32,
-    pub origin_y: u32,
+    pub origin_x: i32,
+    pub origin_y: i32,
     pub textures: SpriteState,
     // unknown bytes to next object
 }
@@ -58,8 +58,8 @@ impl Chunk for Sprt {
             let unknown1 = (0..3).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
             let bbox_mode = buf.read_u32::<LittleEndian>()?;
             let sep_masks = buf.read_u32::<LittleEndian>()?;
-            let origin_x = buf.read_u32::<LittleEndian>()?;
-            let origin_y = buf.read_u32::<LittleEndian>()?;
+            let origin_x = buf.read_i32::<LittleEndian>()?;
+            let origin_y = buf.read_i32::<LittleEndian>()?;
             let _unknown2 = (0..7).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
             // let _unknown2 = buf.read_i32::<LittleEndian>()?;
             // let _unknown3 = buf.read_u32::<LittleEndian>()?;
