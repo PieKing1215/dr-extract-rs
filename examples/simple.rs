@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use dr_extract::{DataWin, DataWinReady, chunk::{FontEntry, Glyph, PNGState, SpriteState}};
 use image::{DynamicImage, GenericImageView};
@@ -32,7 +32,9 @@ fn main() {
 
     // load spritesheet image data
     // requires the TXTR chunk to have been parsed already (parse_txtr)
+    let start = Instant::now();
     data.load_spritesheets().unwrap();
+    println!("load_spritesheets took {}ms", Instant::now().saturating_duration_since(start).as_millis());
     
     // now prints loaded
     match data.txtr.as_ref().unwrap().spritesheets[0].png {

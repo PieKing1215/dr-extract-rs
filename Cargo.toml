@@ -13,3 +13,8 @@ anyhow = "1.0"
 byteorder = "1.4"
 tuple-transpose = "0.1"
 image = { version = "0.23", default-features = false, features = ["png"]}
+rayon = { version = "1.5", optional = true }
+
+[features]
+default = ["parallel"]
+parallel = ["rayon"]

@@ -175,17 +175,44 @@ impl DataWin {
     pub fn load_spritesheets(&mut self) -> anyhow::Result<()> {
 
         if let Some(txtr) = &mut self.txtr {
-            for spr in &mut txtr.spritesheets {
-                if let PNGState::Unloaded { png_addr } = spr.png {
-                    self.buf.set_position(png_addr.into());
+            
+            #[cfg(feature = "parallel")]
+            {
+                use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
-                    let texture = image::io::Reader::new(&mut self.buf)
-                        .with_guessed_format()?
-                        .decode()?;
+                let buf = self.buf.clone();
+                txtr.spritesheets.par_iter_mut().map::<_, anyhow::Result<()>>(|spr| {
+                    let mut buf = buf.clone();
+                    if let PNGState::Unloaded { png_addr } = spr.png {
+                        buf.set_position(png_addr.into());
+    
+                        let texture = image::io::Reader::new(&mut buf)
+                            .with_guessed_format()?
+                            .decode()?;
+    
+                        spr.png = PNGState::Loaded {
+                            texture
+                        };
+                    }
 
-                    spr.png = PNGState::Loaded {
-                        texture
-                    };
+                    Ok(())
+                }).collect::<anyhow::Result<Vec<()>>>()?;
+            }
+
+            #[cfg(not(feature = "parallel"))]
+            {
+                for spr in &mut txtr.spritesheets {
+                    if let PNGState::Unloaded { png_addr } = spr.png {
+                        self.buf.set_position(png_addr.into());
+    
+                        let texture = image::io::Reader::new(&mut self.buf)
+                            .with_guessed_format()?
+                            .decode()?;
+    
+                        spr.png = PNGState::Loaded {
+                            texture
+                        };
+                    }
                 }
             }
         } else {
