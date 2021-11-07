@@ -79,6 +79,27 @@ fn main() {
         }
     }
 
+    println!("Parsing backgrounds...");
+    data.parse_bgnd().expect("parse_bgnd failed");
+
+    println!("Loading backgrounds...");
+    let start = Instant::now();
+    data.load_backgrounds().expect("Loading backgrounds failed");
+    println!("Took {} ms", Instant::now().saturating_duration_since(start).as_millis());
+
+    println!("Dumping backgrounds...");
+    fs::create_dir_all("extract/background/").unwrap();
+    if let Some(bgnd) = &data.bgnd {
+        for (name, bg) in &bgnd.backgrounds {
+            match &bg.texture {
+                dr_extract::chunk::BackgroundState::Loaded { texture } => {
+                    texture.save(format!("extract/background/{}.png", name)).unwrap();
+                }
+                dr_extract::chunk::BackgroundState::Unloaded { .. } => {},
+            }
+        }
+    }
+
     println!("Parsing sounds...");
     data.parse_sond().expect("parse_sond failed");
 

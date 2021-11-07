@@ -5,12 +5,12 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_errors_doc)]
 
-use chunk::{AudioType, Audo, Font, FontEntry, Gen8, Glyph, Optn, PNGState, Sond, SoundEntry, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
+use chunk::{AudioType, Audo, BackgroundEntry, Bgnd, Font, FontEntry, Gen8, Glyph, Optn, PNGState, Sond, SoundEntry, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
 
 use std::{collections::HashMap, convert::TryInto, fs, io::{self, Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::chunk::Chunk;
+use crate::chunk::{BackgroundState, Chunk};
 
 pub mod chunk;
 
@@ -77,6 +77,7 @@ impl DataWinReady {
                 txtr: None,
                 audo: None,
                 font: None,
+                bgnd: None,
             })
         }else {
             Err(anyhow::anyhow!("Could not find \"FORM\" chunk!"))
@@ -97,6 +98,7 @@ pub struct DataWin {
     pub txtr: Option<Txtr>,
     pub audo: Option<Vec<Audo>>,
     pub font: Option<Font>,
+    pub bgnd: Option<Bgnd>,
 }
 
 impl DataWin {
@@ -147,6 +149,13 @@ impl DataWin {
     pub fn parse_txtr(&mut self) -> anyhow::Result<()> {
         if self.txtr.is_none() {
             self.txtr = Some(self.parse_chunk::<Txtr>()?);
+        }
+        Ok(())
+    }
+
+    pub fn parse_bgnd(&mut self) -> anyhow::Result<()> {
+        if self.bgnd.is_none() {
+            self.bgnd = Some(self.parse_chunk::<Bgnd>()?);
         }
         Ok(())
     }
@@ -427,6 +436,100 @@ impl DataWin {
             }
         } else {
             return Err(anyhow::anyhow!("SPRT chunk must be parsed before calling load_sprites!"));
+        }
+
+        Ok(())
+    }
+    
+    fn load_background_raw(txtr: &mut Txtr, buf: &mut Cursor<Vec<u8>>, bg: &mut BackgroundEntry, name: &str) -> anyhow::Result<()> {
+        if let BackgroundState::Unloaded { texture_address } = &bg.texture {
+
+            buf.set_position(*texture_address as u64);
+
+            if *texture_address == 0 {
+                // TODO: log::debug!
+                // println!("sprite {} has a texture_addr == 0", name);
+            }else{
+                let x = buf.read_u16::<LittleEndian>()?;
+                let y = buf.read_u16::<LittleEndian>()?;
+                let width = buf.read_u16::<LittleEndian>()?;
+                let height = buf.read_u16::<LittleEndian>()?;
+                let render_x = buf.read_u16::<LittleEndian>()?;
+                let render_y = buf.read_u16::<LittleEndian>()?;
+                let bouding_x = buf.read_u16::<LittleEndian>()?;
+                let bouding_y = buf.read_u16::<LittleEndian>()?;
+                let bouding_width = buf.read_u16::<LittleEndian>()?;
+                let bouding_height = buf.read_u16::<LittleEndian>()?;
+                let spritesheet_id = buf.read_u16::<LittleEndian>()?;
+
+                let tex = TextureEntry {
+                    x,
+                    y,
+                    width,
+                    height,
+                    render_x,
+                    render_y,
+                    bouding_x,
+                    bouding_y,
+                    bouding_width,
+                    bouding_height,
+                    spritesheet_id,
+                };
+
+                // self.txtr.unwrap() is safe because of the check at the start of the fn
+                let sheet = &mut txtr.spritesheets[tex.spritesheet_id as usize];
+                let texture = match &mut sheet.png {
+                    PNGState::Loaded { texture } => {
+                        Ok(texture.crop(u32::from(tex.x), u32::from(tex.y), u32::from(tex.width), u32::from(tex.height)))
+                    }
+                    PNGState::Unloaded{ .. } => Err(anyhow::anyhow!("Spritesheet not loaded!")),
+                }?;
+
+                bg.texture = BackgroundState::Loaded {
+                    texture
+                };
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn load_background<S: Into<String>>(&mut self, name: S) -> anyhow::Result<()> {
+        if let Some(bgnd) = &mut self.bgnd {
+            // we don't actually use the values already stored in TPAG since the sprite only knows the address, not the index...
+            //   not really sure if it would be worth adding a hashmap or something to save the TPAG entries' addresses so we can look them up here?
+            if let Some(txtr) = &mut self.txtr {
+                let name = &name.into();
+                if let Some(bg) = bgnd.backgrounds.get_mut(name) {
+                    DataWin::load_background_raw(txtr, &mut self.buf, bg, name)?;
+                }
+            } else {
+                return Err(anyhow::anyhow!("TXTR chunk must be parsed before calling load_background!"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("BGND chunk must be parsed before calling load_background!"));
+        }
+
+        Ok(())
+    }
+
+    pub fn load_backgrounds(&mut self) -> anyhow::Result<()> {
+
+        if let Some(bgnd) = &mut self.bgnd {
+            // we don't actually use the values already stored in TPAG since the sprite only knows the address, not the index...
+            //   not really sure if it would be worth adding a hashmap or something to save the TPAG entries' addresses so we can look them up here?
+
+            // if let Some(tpag) = &mut self.tpag {
+                if let Some(txtr) = &mut self.txtr {
+                    for (name, bg) in &mut bgnd.backgrounds {
+                        DataWin::load_background_raw(txtr, &mut self.buf, bg, name)?;
+                    }
+                } else {
+                    return Err(anyhow::anyhow!("TXTR chunk must be parsed before calling load_backgrounds!"));
+                }
+            // }
+        } else {
+            return Err(anyhow::anyhow!("BGND chunk must be parsed before calling load_backgrounds!"));
         }
 
         Ok(())

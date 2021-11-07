@@ -10,6 +10,7 @@ mod tpag;
 mod txtr;
 mod audo;
 mod font;
+mod bgnd;
 use byteorder::{LittleEndian, ReadBytesExt};
 pub use gen8::*;
 pub use optn::*;
@@ -19,6 +20,7 @@ pub use tpag::*;
 pub use txtr::*;
 pub use audo::*;
 pub use font::*;
+pub use bgnd::*;
 
 pub trait Chunk {
     fn parse(buf: &mut Cursor<Vec<u8>>) -> anyhow::Result<Self> where Self: std::marker::Sized;
