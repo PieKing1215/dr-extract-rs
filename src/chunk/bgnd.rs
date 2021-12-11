@@ -14,6 +14,15 @@ pub struct Bgnd {
 #[derive(Debug)]
 pub struct BackgroundEntry {
     pub _unknown1: Vec<u32>,
+    pub _unknown2: u32,
+    pub tile_width: u32,
+    pub tile_height: u32,
+    pub margin_x: u32,
+    pub margin_y: u32,
+    pub columns: u32,
+    pub _unknown3: u32,
+    pub _unknown4: u32,
+    pub ids: Vec<u32>,
     pub texture: BackgroundState,
 }
 
@@ -39,12 +48,32 @@ impl Chunk for Bgnd {
             let name = read_string_ptr(buf)?;
             let unknown1 = (0..3).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
             let texture_address = buf.read_i32::<LittleEndian>()?;
+            let unknown2 = buf.read_u32::<LittleEndian>()?;
+            let tile_width = buf.read_u32::<LittleEndian>()?;
+            let tile_height = buf.read_u32::<LittleEndian>()?;
+            let margin_x = buf.read_u32::<LittleEndian>()?;
+            let margin_y = buf.read_u32::<LittleEndian>()?;
+            let columns = buf.read_u32::<LittleEndian>()?;
+            let count_per = buf.read_u32::<LittleEndian>()?;
+            let count = buf.read_u32::<LittleEndian>()?;
+            let unknown3 = buf.read_u32::<LittleEndian>()?;
+            let unknown4 = buf.read_u32::<LittleEndian>()?;
+            let ids = (0..count*count_per).map(|_| buf.read_u32::<LittleEndian>()).collect::<Result<Vec<u32>, std::io::Error>>()?;
 
             backgrounds.insert(name, BackgroundEntry {
                 _unknown1: unknown1,
                 texture: BackgroundState::Unloaded {
                     texture_address,
                 },
+                _unknown2: unknown2,
+                tile_width,
+                tile_height,
+                margin_x,
+                margin_y,
+                columns,
+                _unknown3: unknown3,
+                _unknown4: unknown4,
+                ids,
             });
         }
 

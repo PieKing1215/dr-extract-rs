@@ -1,7 +1,7 @@
 //! Example program that extracts assets from a data.win file in the working directory.
 //! The extracted assets are placed in ./extract/
 
-use std::{fs, io::Write, path::Path, time::Instant};
+use std::{fs, io::Write, time::Instant, collections::HashMap};
 
 use image::GenericImageView;
 
@@ -83,6 +83,75 @@ fn main() {
     data.parse_bgnd().expect("parse_bgnd failed");
 
     println!("Loading backgrounds...");
+    let rewrap_map: HashMap<String, u32> = [
+        ("bg_battleLayer", 14),
+        ("bg_cc_throneroom_tiles_tileset", 6),
+        ("bg_cc_throneroom_tiles_tileset_ch1", 6),
+        ("bg_cctiles_tileset", 6),
+        ("bg_cctiles_tileset_ch1", 6),
+        ("bg_checkerboard_tileset", 7),
+        ("bg_checkerboard_tileset_ch1", 7),
+        ("bg_darkfield_tiles_outline_tileset_ch1", 6),
+        ("bg_darkfield_tiles_tileset_ch1", 6),
+        ("bg_darkforest_tiles_tileset_ch1", 6),
+        ("bg_darkoutline_tiles_tileset_ch1", 3),
+        ("bg_darktiles1_tileset", 5),
+        ("bg_darktiles1_tileset_ch1", 5),
+        ("bg_darktown_PLACEHOLDER", 16),
+        ("bg_dw_bf2_tileset", 7),
+        ("bg_dw_castle_1f_tileset", 16),
+        ("bg_dw_castle_town_tileset", 13),
+        ("bg_dw_castle_town_top_tileset", 17),
+        ("bg_dw_city_alley_animated_tileset", 3),
+        ("bg_dw_city_alley_tileset", 11),
+        ("bg_dw_city_alleyway_tileset", 15),
+        ("bg_dw_city_carnival_lanterns", 4),
+        ("bg_dw_city_doors_tileset", 11),
+        ("bg_dw_city_girder_tileset", 9),
+        ("bg_dw_city_sidewalk_animated_tileset", 4),
+        ("bg_dw_city_stairs_tileset", 7),
+        ("bg_dw_city_street_edges_tileset", 13),
+        ("bg_dw_city_street_tileset", 11),
+        ("bg_dw_city_tileset", 17),
+        ("bg_dw_city_top", 9),
+        ("bg_dw_coaster", 7),
+        ("bg_dw_coaster_tileset", 9),
+        ("bg_dw_cyber_battle_tileset", 13),
+        ("bg_dw_cyber_destroyed_tileset", 5),
+        ("bg_dw_cyber_lines_tileset", 3),
+        // ("bg_dw_cyber_monitor_tileset", 6), // broken
+        ("bg_dw_cyber_tileset", 13),
+        ("bg_dw_dither_overlay_tileset", 4), // ?
+        ("bg_dw_mansion_acid_animated_tileset", 4),
+        ("bg_dw_mansion_acid_fountain", 7),
+        ("bg_dw_mansion_acid_tileset", 8),
+        ("bg_dw_mansion_basement_door", 2),
+        ("bg_dw_mansion_battle_tileset", 18),
+        ("bg_dw_mansion_foyer", 12),
+        ("bg_dw_mansion_interior_tileset", 10),
+        ("bg_dw_mansion_kitchen", 5),
+        ("bg_dw_mansion_pillars_dark_tileset", 3),
+        ("bg_dw_mansion_pillars_tileset", 3),
+        ("bg_dw_mansion_spamton_basement_tileset", 4),
+        ("bg_dw_mansion_stairs_tilest", 7),
+        ("bg_dw_mansion_tileset", 18),
+        ("bg_dw_mansion_top", 10),
+        ("bg_dw_rounded_edges_tileset", 10),
+        ("bg_dw_trash_tileset", 11),
+        ("bg_forest_details_tileset_ch1", 6),
+        ("bg_neoruins_tileset_ch1", 4),
+        ("bg_schooltiles_tileset", 9),
+        ("bg_schooltiles_tileset_ch1", 9),
+        ("bg_tiles_castle_tileset", 4),
+        ("bg_tiles_castle_tileset_ch1", 4),
+        ("bg_towntiles_tileset", 10),
+        ("bg_towntiles_tileset_ch1", 10),
+    ].iter().map(|(k, v)| (k.to_string(), *v)).collect();
+
+    // this reorganizes the output tilesets by using the "intended" number of columns instead of the number that gamemaker arbitrarily picks
+    // unfortunately, the giant map above is needed since there does not seem to be a way to find/calculate this value automatically
+    data.add_background_rewrap_columns(rewrap_map);
+
     let start = Instant::now();
     data.load_backgrounds().expect("Loading backgrounds failed");
     println!("Took {} ms", Instant::now().saturating_duration_since(start).as_millis());

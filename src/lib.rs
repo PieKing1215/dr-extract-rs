@@ -5,7 +5,8 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::missing_errors_doc)]
 
-use chunk::{AudioType, Audo, BackgroundEntry, Bgnd, Font, FontEntry, Gen8, Glyph, Optn, PNGState, Sond, SoundEntry, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
+use chunk::{AudioType, Audo, BackgroundEntry, Bgnd, Font, Gen8, Optn, PNGState, Sond, SoundEntry, SpriteEntry, SpriteState, Sprt, TextureEntry, Tpag, Txtr};
+use image::{GenericImageView, DynamicImage, imageops};
 
 use std::{collections::HashMap, convert::TryInto, fs, io::{self, Cursor, Read}, path::Path};
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -78,6 +79,7 @@ impl DataWinReady {
                 audo: None,
                 font: None,
                 bgnd: None,
+                bgnd_rewrap_columns: HashMap::new(),
             })
         }else {
             Err(anyhow::anyhow!("Could not find \"FORM\" chunk!"))
@@ -99,6 +101,7 @@ pub struct DataWin {
     pub audo: Option<Vec<Audo>>,
     pub font: Option<Font>,
     pub bgnd: Option<Bgnd>,
+    bgnd_rewrap_columns: HashMap<String, u32>,
 }
 
 impl DataWin {
@@ -441,7 +444,11 @@ impl DataWin {
         Ok(())
     }
     
-    fn load_background_raw(txtr: &mut Txtr, buf: &mut Cursor<Vec<u8>>, bg: &mut BackgroundEntry, name: &str) -> anyhow::Result<()> {
+    pub fn add_background_rewrap_columns(&mut self, bgnd_rewrap_columns: HashMap<String, u32>) {
+        self.bgnd_rewrap_columns.extend(bgnd_rewrap_columns);
+    }
+
+    fn load_background_raw(txtr: &mut Txtr, buf: &mut Cursor<Vec<u8>>, bg: &mut BackgroundEntry, name: &str, bgnd_rewrap_columns: &mut HashMap<String, u32>) -> anyhow::Result<()> {
         if let BackgroundState::Unloaded { texture_address } = &bg.texture {
 
             buf.set_position(*texture_address as u64);
@@ -478,12 +485,41 @@ impl DataWin {
 
                 // self.txtr.unwrap() is safe because of the check at the start of the fn
                 let sheet = &mut txtr.spritesheets[tex.spritesheet_id as usize];
-                let texture = match &mut sheet.png {
+                let mut texture = match &mut sheet.png {
                     PNGState::Loaded { texture } => {
                         Ok(texture.crop(u32::from(tex.x), u32::from(tex.y), u32::from(tex.width), u32::from(tex.height)))
                     }
                     PNGState::Unloaded{ .. } => Err(anyhow::anyhow!("Spritesheet not loaded!")),
                 }?;
+
+                if let Some(rewrap_columns) = bgnd_rewrap_columns.get(&name.to_string()).copied() {
+                    if rewrap_columns != bg.columns {
+                        // println!("reflowing {} from {} to {} ({})", name, bg.columns, rewrap_columns, rewrap_columns as i32 - bg.columns as i32);
+                        // println!("{} {}", bg.columns, bg.rewrap_columns as i32 - bg.columns as i32);
+                        let size = bg.tile_width + bg.margin_x * 2;
+
+                        let old_t_w = texture.width() / size;
+                        let old_t_h = texture.height() / size;
+                        let old_area_t = old_t_w * old_t_h;
+
+                        let new_t_w = rewrap_columns;
+                        let new_t_h = (f64::from(old_area_t) / f64::from(new_t_w)).ceil() as u32;
+
+                        let mut new_tex = DynamicImage::new_rgba8(new_t_w * size, new_t_h * size);
+
+                        for y in 0..old_t_h {
+                            for x in 0..old_t_w {
+                                let index = x + y * old_t_w;
+                                let nx = index % new_t_w;
+                                let ny = index / new_t_w;
+                                let sub = texture.crop_imm(x * size, y * size, size, size);
+                                imageops::overlay(&mut new_tex, &sub, nx * size, ny * size);
+                            }   
+                        }
+
+                        texture = new_tex;
+                    }
+                }
 
                 bg.texture = BackgroundState::Loaded {
                     texture
@@ -501,7 +537,7 @@ impl DataWin {
             if let Some(txtr) = &mut self.txtr {
                 let name = &name.into();
                 if let Some(bg) = bgnd.backgrounds.get_mut(name) {
-                    DataWin::load_background_raw(txtr, &mut self.buf, bg, name)?;
+                    DataWin::load_background_raw(txtr, &mut self.buf, bg, name, &mut self.bgnd_rewrap_columns)?;
                 }
             } else {
                 return Err(anyhow::anyhow!("TXTR chunk must be parsed before calling load_background!"));
@@ -522,7 +558,7 @@ impl DataWin {
             // if let Some(tpag) = &mut self.tpag {
                 if let Some(txtr) = &mut self.txtr {
                     for (name, bg) in &mut bgnd.backgrounds {
-                        DataWin::load_background_raw(txtr, &mut self.buf, bg, name)?;
+                        DataWin::load_background_raw(txtr, &mut self.buf, bg, name, &mut self.bgnd_rewrap_columns)?;
                     }
                 } else {
                     return Err(anyhow::anyhow!("TXTR chunk must be parsed before calling load_backgrounds!"));
